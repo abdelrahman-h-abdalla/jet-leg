@@ -18,7 +18,7 @@ class KinematicsInterface:
         self.dog = DogInterface()
         self.rbd = RigidBodyDynamics()
         self.robotName = robot_name
-        self.hyqreal_ik_success = True
+        self.ik_success = True
         if robot_name == 'hyq':
             self.hyqKin = HyQKinematics()
         else:
@@ -36,13 +36,13 @@ class KinematicsInterface:
         else:
             return self.robotKin.getCurrentQ()
 
-    def inverse_kin(self, contactsBF, foot_vel, q_0=None):
+    def inverse_kin(self, contactsBF, foot_vel, stance_index, q_0=None):
 
         if self.robotName == 'hyq':
             q = self.hyqKin.fixedBaseInverseKinematics(contactsBF, foot_vel)
             return q
         else:
-            q = self.robotKin.fixedBaseInverseKinematics(contactsBF, q_0)
+            q, self.ik_success = self.robotKin.fixedBaseInverseKinematics(contactsBF, stance_index, q_0)
             return q
 
     def isOutOfJointLims(self, joint_positions, joint_limits_max, joint_limits_min):

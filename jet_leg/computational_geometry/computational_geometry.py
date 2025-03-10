@@ -5,8 +5,9 @@ Created on Mon May 28 13:05:01 2018
 @author: rorsolino
 """
 import numpy as np 
+from jet_leg.computational_geometry.geometry import Geometry
 
-class ComputationalGeometry:
+class ComputationalGeometry(Geometry):
     
     def get_facets(self, v_rep):
         vx = v_rep[0,0:8]
@@ -32,7 +33,7 @@ class ComputationalGeometry:
                          np.hstack([vz[0],vz[3],vz[7],vz[4],vz[0]])])
         return face1, face2, face3, face4, face5, face6
         
-    def get_halfspace_rep(self, v_rep):
+    def get_hexahedron_halfspace_rep(self, v_rep):
         face1, face2, face3, face4, face5, face6 = self.get_facets(v_rep)
         edge1 = face1[:,2] - face1[:,1]
         edge2 = face1[:,0] - face1[:,1]
@@ -102,4 +103,26 @@ class ComputationalGeometry:
     
         # Return absolute value
         return np.abs(area / 2.0)
+    
+    def isPointRedundant(self, facets, point2check):
+        ''' This code assumes that the facets are given in the form [A|b] where:
+                            A x < b                                            '''
+        A = facets[:, :-1]
+        b = facets[:, -1]
+        distances_from_edges = np.dot(A, point2check) + b
+        min_distance = min(-distances_from_edges)
+        if min_distance < 0.0:
+            isPointInside = False
+        else:
+            isPointInside = True
+
+        return isPointInside, min_distance
+    
+    def isPointRedundantGivenVertices(self, IP_points, point2check):
+
+        facets = self.compute_halfspaces_convex_hull(IP_points)
+        isPointFeasible = self.isPointRedundant(facets, point2check)
+
+        return isPointFeasible
+
         

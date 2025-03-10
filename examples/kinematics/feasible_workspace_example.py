@@ -23,7 +23,7 @@ from matplotlib.lines import Line2D
 
 plt.close('all')
 
-robot_name = 'hyq'
+robot_name = 'hyqreal'
 full_projection = full_feasible_workspace.FeasibleWorkspace(robot_name)
 projection = nonlinear_projection.NonlinearProjectionBretl(robot_name)
 
@@ -34,6 +34,7 @@ math = Math()
 comWF = np.array([0.0107, 0.0003, 0.49])  # pos of COM in world frame w.o. trunk controller
 # comWF = np.array([0.009, 0.0001, 0.549])  # pos of COM in world frame w. trunk controller
 comBF = np.array([0.0094,  0.0002, -0.0433])  # pos of COM in body frame w.o. trunk controller
+# comBF = np.array([-0.00, 0.000, -0.0])
 # comBF = np.array([0.0094, 0.0002, -0.0458])  # pos of COM in body frame w. trunk controller
 rpy = np.array([0.00012, 0.00601, 3.6e-05])  # orientation of body frame w.o. trunk controller
 # rpy = np.array([0.00001589, -0.00000726, -0.00000854])  # orientation of body frame w. trunk controller
@@ -43,10 +44,16 @@ rpy = np.array([0.00012, 0.00601, 3.6e-05])  # orientation of body frame w.o. tr
 # RF_foot = np.array([1., -0.3, 0.02])
 # LH_foot = np.array([0.1, 0.3, 0.02])
 # RH_foot = np.array([0.2, -0.3, 0.02])
-LF_foot = np.array([0.36, 0.32, 0.02])  # Starting configuration w.o. trunk controller
-RF_foot = np.array([0.36, -0.32, 0.02])
-LH_foot = np.array([-0.36, 0.32, 0.02])
-RH_foot = np.array([-0.36, -0.32, 0.02])
+# HyQ
+# LF_foot = np.array([0.36, 0.32, 0.02])  # Starting configuration w.o. trunk controller
+# RF_foot = np.array([0.36, -0.32, 0.02])
+# LH_foot = np.array([-0.36, 0.32, 0.02])
+# RH_foot = np.array([-0.36, -0.32, 0.02])
+# HyQReal
+LF_foot = np.array([0.44, 0.34, 0.02])  # Starting configuration w.o. trunk controller
+RF_foot = np.array([0.44, -0.34, 0.02])
+LH_foot = np.array([-0.44, 0.34, 0.02])
+RH_foot = np.array([-0.44, -0.34, 0.02])
 
 contactsWF = np.vstack((LF_foot, RF_foot, LH_foot, RH_foot))
 
@@ -56,31 +63,36 @@ stanceFeet = [1, 1, 1, 1]
 tripleStance = False
 randomSwingLeg = random.randint(0, 3)  # if you want you can define a swing leg using this variable
 
-if tripleStance:
-    print 'Swing leg', randomSwingLeg
-    stanceFeet[randomSwingLeg] = 0
-print 'stanceLegs ', stanceFeet
-
 ''' joint position limits for each leg (this code assumes a hyq-like design, i.e. three joints per leg)
 HAA = Hip Abduction Adduction
 HFE = Hip Flextion Extension
 KFE = Knee Flextion Extension
 '''
-LF_q_lim_max = [0.44, 1.2217, -0.3491]  # HAA, HFE, KFE
-LF_q_lim_min = [-1.22, -0.8727, -2.4435]  # HAA, HFE, KFE
-RF_q_lim_max = [0.44, 1.2217, -0.3491]  # HAA, HFE, KFE
-RF_q_lim_min = [-1.22, -0.8727, -2.4435]  # HAA, HFE, KFE
-LH_q_lim_max = [0.44, 0.8727, 2.4435]  # HAA, HFE, KFE
-LH_q_lim_min = [-1.22, -1.2217, 0.3491]  # HAA, HFE, KFE
-RH_q_lim_max = [0.44, 0.8727, 2.4435]  # HAA, H FE, KFE
-RH_q_lim_min = [-1.22, -1.2217, 0.3491]  # HAA, HFE, KFE
+# HyQ
+# LF_q_lim_max = [0.44, 1.2217, -0.3491]  # HAA, HFE, KFE
+# LF_q_lim_min = [-1.22, -0.8727, -2.4435]  # HAA, HFE, KFE
+# RF_q_lim_max = [0.44, 1.2217, -0.3491]  # HAA, HFE, KFE
+# RF_q_lim_min = [-1.22, -0.8727, -2.4435]  # HAA, HFE, KFE
+# LH_q_lim_max = [0.44, 0.8727, 2.4435]  # HAA, HFE, KFE
+# LH_q_lim_min = [-1.22, -1.2217, 0.3491]  # HAA, HFE, KFE
+# RH_q_lim_max = [0.44, 0.8727, 2.4435]  # HAA, H FE, KFE
+# RH_q_lim_min = [-1.22, -1.2217, 0.3491]  # HAA, HFE, KFE
+# HyQReal
+LF_q_lim_max = [0.401, 2.181, -0.770]  # HAA, HFE, KFE
+LF_q_lim_min = [-0.733, 0.262, -2.770]  # HAA, HFE, KFE
+RF_q_lim_max = [0.401, 2.181, -0.770]  # HAA, HFE, KFE
+RF_q_lim_min = [-0.733, 0.262, -2.770]  # HAA, HFE, KFE
+LH_q_lim_max = [0.401, 2.181, -0.770]  # HAA, HFE, KFE
+LH_q_lim_min = [-0.733, 0.262, -2.770]  # HAA, HFE, KFE
+RH_q_lim_max = [0.401, 2.181, -0.770]  # HAA, HFE, KFE
+RH_q_lim_min = [-0.733, 0.262, -2.770]  # HAA, HFE, KFE
 joint_limits_max = np.array([LF_q_lim_max, RF_q_lim_max, LH_q_lim_max, RH_q_lim_max])
 joint_limits_min = np.array([LF_q_lim_min, RF_q_lim_min, LH_q_lim_min, RH_q_lim_min])
 
 '''You now need to fill the 'params' object with all the relevant 
     informations needed for the computation of the IP'''
 
-params = IterativeProjectionParameters()
+params = IterativeProjectionParameters(robot_name)
 params.setContactsPosWF(contactsWF)
 params.setCoMPosWF(comWF)
 params.setCoMPosBF(comBF)
@@ -92,8 +104,8 @@ params.setActiveContacts(stanceFeet)
 ''' Compute FULL workspace'''
 # polygon, computation_time = projection.project_polytope(params, 20. * np.pi / 180, 0.03)
 full_polygon, full_polygon_states, computation_time = full_projection.project_polytope(params)
-print "vertices", full_polygon
-print "Computation Time: ", computation_time, " seconds"
+print ("vertices", full_polygon)
+print ("Computation Time: ", computation_time, " seconds")
 
 ''' Compute reachable region'''
 com_check = np.array([0.3, -0.1, 0.5])
@@ -122,7 +134,7 @@ for i in range(0, len(full_polygon)):
         h2 = plt.plot(full_polygon[i][0], full_polygon[i][1], 'go', markersize=5.5)
 
 '''' Plot reachable region'''
-h6 = plotter.plot_polygon(np.transpose(polygon), '--k', 'reachable region')
+h6 = plotter.plot_polygon(np.transpose(polygon), '--k', 5, 'reachable region')
 
 for j in range(0, nc):  # this will only show the contact positions and normals of the feet that are defined to be in stance
     idx = int(stanceID[j])

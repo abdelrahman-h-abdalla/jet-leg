@@ -95,17 +95,17 @@ class FeasibleWorkspace:
 	#
 	# 		# cxy_opt = [cxy_t[0], cxy_t[1]]
 
-	def check_point_reachability(self, com_pos_x, com_pos_y, com_pos_z, params):
+	def check_point_reachability(self, com_pos_x, com_pos_y, com_pos_z, params, q_CoM=None):
 
 		c_t = [com_pos_x, com_pos_y, com_pos_z]  # CoM to be tested
 		foot_vel = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
 		stanceIndex = params.getStanceIndex(params.getStanceFeet())
-
+		stanceIndex = np.array(stanceIndex, dtype=int)  # Ensure stance_index is an array of integers
+		
 		contactsBF = self.getcontactsBF(params, c_t)
-		q = self.kin.inverse_kin(contactsBF, foot_vel)
-		q_to_check = np.concatenate(
-			[list(q[leg * 3: leg * 3 + 3]) for leg in stanceIndex])  # To check 3 or 4 feet stance
+		q = self.kin.inverse_kin(contactsBF, foot_vel, stanceIndex, q_CoM)
+		q_to_check = np.concatenate([q[leg*3 : leg*3+3] for leg in stanceIndex]) # To check 3 or 4 feet stance
 
 		out = self.kin.isOutOfJointLims(q_to_check, params.getJointLimsMax()[stanceIndex, :],
 										params.getJointLimsMin()[stanceIndex, :])
@@ -125,22 +125,24 @@ class FeasibleWorkspace:
 		"""
 
 		comPosWF_0 = params.getCoMPosWF()
+		
 
 		# Check if current configuration is already feasible
 		stanceIndex = params.getStanceIndex(params.getStanceFeet())
 		contactsBF = self.getcontactsBF(params, comPosWF_0)
 		foot_vel = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
 		if self.kin.isOutOfWorkSpace(contactsBF, params.getJointLimsMax(), params.getJointLimsMin(), stanceIndex, foot_vel):
-			print "Couldn't compute a reachable region! Current configuration is already out of joint limits!"
+			print ("Couldn't compute a reachable region! Current configuration is already out of joint limits!")
 		else:
 			# polygon = Polygon()
 			theta = 0
 			boundary_x = np.linalg.norm(params.getContactsPosWF()[0][0] - comPosWF_0[0]) * 1.75
 			boundary_y = np.linalg.norm(params.getContactsPosWF()[0][1] - comPosWF_0[1]) * 1.75
+			q_CoM = self.kin.get_current_q()
 
 			for point_y in np.arange(comPosWF_0[0] - boundary_x, comPosWF_0[0] + boundary_x, 0.025):
 				for point_x in np.arange(comPosWF_0[1] - boundary_y, comPosWF_0[1] + boundary_y, 0.015):
-					self.check_point_reachability(point_x, point_y, comPosWF_0[2], params)
+					self.check_point_reachability(point_x, point_y, comPosWF_0[2], params, q_CoM)
 			# while theta < 360. * pi / 180.:
 			# 	# print "theta: ", theta
 			#
@@ -164,7 +166,6 @@ class FeasibleWorkspace:
 		vertices: list of arrays List of vertices of the
 				projected polygon.
 		"""
-		print theta_step
 		ip_start = time.time()
 		polygon, polygon_states = self.compute_polygon(params, theta_step, dir_step)
 		# polygon.sort_vertices()

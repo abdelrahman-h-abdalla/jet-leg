@@ -22,11 +22,11 @@ from setuptools import setup, find_packages
 	
 setup(
     name='jet_leg',
-    version='0.0.0',
+    version='1.0.0',
     description="Python Polyhedron Manipulation",
-    url="https://github.com/orsoromeo/jet-leg",
-    author="Romeo Orsolino",
-    author_email="romeo.orsolino@iit.it",
+    url="https://github.com/abdelrahman-h-abdalla/jet-leg",
+    author="Abdelrahman Abdalla",
+    author_email="abdulrahman.h.abdallah@gmail.com",
     license="LGPL",
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -35,9 +35,14 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU Lesser General Public License (LGPL)',
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Mathematics'],
     packages=find_packages(),
-    include_package_data=True, install_requires=['numpy', 'scipy', 'pinocchio']
+    include_package_data=True, install_requires=['numpy>=1.26.4',
+                                                 'scipy>=1.14.1',
+                                                 'python-cdd>=0.0.98',
+                                                 'cvxopt>=1.3.2',
+                                                 'matplotlib>=3.9.2',
+                                                 'shapely>=2.0.6',
+                                                 'pin']
 )

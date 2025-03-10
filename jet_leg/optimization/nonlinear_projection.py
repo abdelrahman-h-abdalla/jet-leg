@@ -136,11 +136,12 @@ class NonlinearProjectionBretl:
 			z_coordinate = self.math.compute_z_component_of_plane(c_t_xy, plane_normal, CoM_plane_z_intercept)
 			c_t = np.append(c_t_xy, z_coordinate)
 			contactsBF = self.getcontactsBF(params, c_t)
-			q = self.kin.inverse_kin(contactsBF, foot_vel, q_0)
-			q_to_check = np.concatenate([list(q[leg*3 : leg*3+3]) for leg in stanceIndex]) # To check 3 or 4 feet stance
+			stanceIndex = np.array(stanceIndex, dtype=int)  # Ensure stance_index is an array of integers
+			q = self.kin.inverse_kin(contactsBF, foot_vel, stanceIndex, q_0)
+			q_to_check = np.concatenate([q[leg*3 : leg*3+3] for leg in stanceIndex]) # To check 3 or 4 feet stance
 
 			# if (not self.kin.hyqreal_ik_success) or self.kin.isOutOfJointLims(q, params.getJointLimsMax(), params.getJointLimsMin()):
-			if (not self.kin.hyqreal_ik_success) or \
+			if (not self.kin.ik_success) or \
 					self.kin.isOutOfJointLims(q_to_check, params.getJointLimsMax()[stanceIndex,:],
 											  params.getJointLimsMin()[stanceIndex,:]): # kin.hyqreal_ik_success is always true for Hyq
 				c_t_feasible = False
@@ -154,7 +155,6 @@ class NonlinearProjectionBretl:
 		# Perform bisection algorithm using two points from previous step
 		# Switch direction to go back to feasible region
 		dir_step = -dir_step / 2
-
 		while abs(dir_step) >= min_dir_step and i < max_iter:
 
 			old_c_t_feasible = c_t_feasible
@@ -162,12 +162,12 @@ class NonlinearProjectionBretl:
 			z_coordinate = self.math.compute_z_component_of_plane(c_t_xy, plane_normal, CoM_plane_z_intercept)
 			c_t = np.append(c_t_xy, z_coordinate)
 			contactsBF = self.getcontactsBF(params, c_t)
-			q = self.kin.inverse_kin(contactsBF, foot_vel, q_0)
+			q = self.kin.inverse_kin(contactsBF, foot_vel, stanceIndex, q_0)
 			q_to_check = np.concatenate([list(q[leg * 3: leg * 3 + 3]) for leg in stanceIndex]) # To check 3 or 4 feet stance
 
 			# If new point is on the same side (feasible or infeasible region) as last point, continue in same direction
 			# if self.kin.hyqreal_ik_success and (not self.kin.isOutOfJointLims(q, params.getJointLimsMax(), params.getJointLimsMin())):
-			if self.kin.hyqreal_ik_success and \
+			if self.kin.ik_success and \
 					(not self.kin.isOutOfJointLims(q_to_check, params.getJointLimsMax()[stanceIndex,:],
 												   params.getJointLimsMin()[stanceIndex,:])):
 				c_t_feasible = True

@@ -4,6 +4,9 @@ class AliengoModel:
     def __init__(self):
 
         self.trunkMass = 21.525
+        self.trunkInertia = np.array([[0.274775, -0.00499095,  0.00217848],
+                                              [-0.00499095,     1.44553, -0.00100954],
+                                              [0.00217848, -0.00100954,     1.44601]])
 
         ''' torque limits for each leg (this code assumes a hyq-like design, i.e. three joints per leg)
         HAA = Hip Abduction Adduction

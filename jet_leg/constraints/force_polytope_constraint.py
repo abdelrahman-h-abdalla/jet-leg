@@ -29,32 +29,33 @@ class ForcePolytopeConstraint:
         self.dog = DogInterface()
         self.rbd = RigidBodyDynamics()
         self.frictionConeConstr = FrictionConeConstraint()
+        self.compGeom = ComputationalGeometry()
 
-    def compute_actuation_constraints(self, contact_iterator, torque_limits, leg_self_weight, euler_angles, point_contact, contact_torque_lims):
+    def compute_actuation_constraints(self, contact_iterator, torque_limits, leg_self_weight, euler_angles, use_contact_torque, contact_torque_lims):
 
         jacobianMatrices, isOutOfWorkspace = self.kin.get_jacobians()
         # print(jacobianMatrices)
         if isOutOfWorkspace:
             C1 = np.zeros((0, 0))
             d1 = np.zeros((1, 0))
-            actuation_polygons_WF = 0
+            current_actuation_polygons_WF = 0
             print('Out of workspace IK!!!')
         else:
             #            print 'Jacobians',jacobianMatrices
-            actuation_polygons = self.computeActuationPolygons(jacobianMatrices, torque_limits, leg_self_weight)
+            current_actuation_polygons = self.computeActuationPolygons(jacobianMatrices, torque_limits, leg_self_weight)
             rot = Rot.from_euler('xyz', [euler_angles[0], euler_angles[1], euler_angles[2]], degrees=False)
-            W_R_B = rot.as_dcm()
-            actuation_polygons_WF = W_R_B.dot(actuation_polygons[contact_iterator])
+            W_R_B = rot.as_matrix()
+            current_actuation_polygons_WF = W_R_B.dot(current_actuation_polygons[contact_iterator])
             ''' in the case of the IP alg. the contact force limits must be divided by the mass
 			because the gravito inertial wrench is normalized'''
 
             C1 = np.zeros((0, 0))
             d1 = np.zeros((1, 0))
 
-            if point_contact:
-                halfSpaceConstraints, knownTerm = self.hexahedron(actuation_polygons_WF)
+            if not use_contact_torque:
+                halfSpaceConstraints, offsetTerm = self.hexahedron(current_actuation_polygons_WF)
             else:
-                hexahedronHalfSpaceConstraints, d = self.hexahedron(actuation_polygons_WF)
+                hexahedronHalfSpaceConstraints, d = self.hexahedron(current_actuation_polygons_WF)
                 wrench_term = np.array([[0, 0, 0, +1, 0],
                     [0, 0, 0, 0, +1],
                     [0, 0, 0, -1, 0],
@@ -63,10 +64,10 @@ class ForcePolytopeConstraint:
                 halfSpaceConstraints = np.vstack([force_term, wrench_term])
                 max_contact_torque = contact_torque_lims[1]
                 min_contact_torque = contact_torque_lims[0]
-                knownTerm = np.vstack([d, max_contact_torque, max_contact_torque, -min_contact_torque, -min_contact_torque])
+                offsetTerm = np.vstack([d, max_contact_torque, max_contact_torque, -min_contact_torque, -min_contact_torque])
 
             C1 = block_diag(C1, halfSpaceConstraints)
-            d1 = np.hstack([d1, knownTerm.T])
+            d1 = np.hstack([d1, offsetTerm.T])
 
             # print("H description: ",C1, d1)
             # print C1[0,0]
@@ -79,22 +80,22 @@ class ForcePolytopeConstraint:
             # print "V description: "
             # print actuation_polygons[contactIterator]
 
-        return C1, d1, actuation_polygons_WF, isOutOfWorkspace
+        return C1, d1, current_actuation_polygons_WF, isOutOfWorkspace
 
     def zonotope(self, dx=100, dy=100, dz=100):
         constraint = np.vstack([np.eye(3), -np.eye(3)])
-        known_term = np.array([[dx], [dy], [dz], [dx], [dy], [dz]])
-        return constraint, known_term
+        offsetTerm = np.array([[dx], [dy], [dz], [dx], [dy], [dz]])
+        return constraint, offsetTerm
 
     def hexahedron(self, v_rep):
-        geom = ComputationalGeometry()
-        h_rep1, h_rep2, h_rep3, h_rep4, h_rep5, h_rep6 = geom.get_halfspace_rep(v_rep)
+
+        h_rep1, h_rep2, h_rep3, h_rep4, h_rep5, h_rep6 = self.compGeom.get_hexahedron_halfspace_rep(v_rep)
         h_rep = np.vstack([h_rep1, h_rep2, h_rep3, h_rep4, h_rep5, h_rep6])
 
         if (h_rep[1, 3] > 0):
             h_rep = np.vstack([h_rep1, -h_rep2, -h_rep3, -h_rep4, -h_rep5, h_rep6])
             constraint = h_rep[:, 0:3]
-            known_term = np.vstack([[-h_rep1[3]],
+            offsetTerm = np.vstack([[-h_rep1[3]],
                                     [h_rep2[3]],
                                     [h_rep3[3]],
                                     [h_rep4[3]],
@@ -103,7 +104,7 @@ class ForcePolytopeConstraint:
         else:
             h_rep = np.vstack([-h_rep1, h_rep2, h_rep3, h_rep4, h_rep5, -h_rep6])
             constraint = h_rep[:, 0:3]
-            known_term = np.vstack([[h_rep1[3]],
+            offsetTerm = np.vstack([[h_rep1[3]],
                                     [-h_rep2[3]],
                                     [-h_rep3[3]],
                                     [-h_rep4[3]],
@@ -111,7 +112,7 @@ class ForcePolytopeConstraint:
                                     [h_rep6[3]]])
 
             # print constraint, known_term
-        return constraint, known_term
+        return constraint, offsetTerm
 
     def computeActuationPolygons(self, legsJacobians, torque_limits, leg_self_weight):
 

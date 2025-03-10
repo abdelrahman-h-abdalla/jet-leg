@@ -15,6 +15,32 @@ This python library contains the code used for the computation of the feasibilty
 - compare different leg designs and understand their consequences on the robot's balancing capabilities; 
 - test various formulations of linear, convex or nonlinear trajectory optimization problems;
 
+## Setup
+
+This guide assumes that `$PROJECT_ROOT` refers to the absolute path to this repository.
+
+### Installing and Setting Up Virtual Environment
+For a quick install, you can set up a virtual environment inside the project directory:
+```
+sudo apt install -y python-venv
+python -m venv $PROJECT_ROOT/venv
+source $PROJECT_ROOT/venv/bin/activate
+```
+
+Now, you are ready to use the virtual environment. To install
+the dependencies related to this project, make sure you activate
+the environment and then run:
+
+```
+cd $PROJECT_ROOT/jet_leg_common
+pip install -e .
+```
+
+And then
+```
+cd $PROJECT_ROOT
+pip install -e .
+```
 
 ## Dependencies
 
@@ -26,20 +52,6 @@ This python library contains the code used for the computation of the feasibilty
 - CVXOPT
 - Matplotlib
 - Pathos (multiprocessing)
-
-The above dependencies can be installed for Python 3.5 with the following commands:
-```
-pip install --user numpy
-pip install --user pyyaml
-pip install --user shapely
-pip install --user pycddlib
-pip install --user scipy
-pip install --user cvxopt==1.2.5
-pip install --user matplotlib
-pip install --user pathos==0.2.7
-```
-
-You can remove all ``--user`` arguments to install these Python modules system-wide.
 
 Other dependencies:
 - [Pinocchio](https://github.com/stack-of-tasks/pinocchio) 
@@ -63,17 +75,6 @@ sudo apt-get install ffmpeg
 ```
 - [unittest](https://docs.python.org/3/library/unittest.html) for testing of dependencies installation and for development
 
-
-<!--## Installation (no longer used)
-
-Finally, clone this repository and run its setup script:
-```
-git clone git@gitlab.advr.iit.it:rorsolino/jet-leg.git
-cd jet-leg
-python setup.py build
-python setup.py install --user
-```
--->
 
 ## Testing the library
 After completing the installation navigate to the [examples](https://gitlab.advr.iit.it/rorsolino/jet-leg/tree/master/examples) folder:

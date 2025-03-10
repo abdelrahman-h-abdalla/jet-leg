@@ -8,13 +8,15 @@ from __future__ import absolute_import
 
 import numpy as np
 from .math_tools import Math
+from scipy.spatial.transform import Rotation as Rot
+from jet_leg.robots.robot_model_interface import RobotModelInterface
 
 
 class IterativeProjectionParameters:
-	def __init__(self):
+	def __init__(self, robot_name):
 
-		self.robot_name = 'hyq'
-
+		self.robotName = robot_name
+		self.robotModel = RobotModelInterface(self.robotName)
 		self.no_of_legs = 4
 		self.stride = 3 # Used for receiving data from ROS arrays
 
@@ -24,6 +26,7 @@ class IterativeProjectionParameters:
 		self.comPositionWF = [0., 0., 0.]
 		self.comLinAcc = [0., 0., 0.]
 		self.comAngAcc = [0., 0., 0.]
+		self.comLinVel = [0., 0., 0.] # Used for ICP computation
 		self.comAngVel = [0., 0., 0.]
 		self.externalForce = [0., 0., 0.]
 		self.externalCentroidalTorque = [0., 0., 0.]
@@ -32,6 +35,7 @@ class IterativeProjectionParameters:
 		self.roll = 0.0
 		self.pitch = 0.0
 		self.yaw = 0.0
+		self.eurlerAngles = [self.roll, self.pitch, self.yaw]
 
 		self.LF_tau_lim = [50.0, 50.0, 50.0]
 		self.RF_tau_lim = [50.0, 50.0, 50.0]
@@ -76,10 +80,11 @@ class IterativeProjectionParameters:
 							   'FRICTION_AND_ACTUATION']
 
 		self.friction = 0.8
-		self.robotMass = 85  # Kg
-		self.robotInertia = np.eye(3)
+		self.robotMass = self.robotModel.trunkMass #Kg
+		self.robotInertia = self.robotModel.trunkInertia #Kg
 		self.numberOfGenerators = 4
-		self.pointContacts = False  # False if contact torques are allowed (e.g. humanoid foot or double support quadruped).
+		self.useContactTorque = False  # False if contact torques are allowed (e.g. humanoid foot or double support quadruped).
+		self.useInstantaneousCapturePoint = False # Used for margin definition
 		self.actual_swing = 0
 
 		self.plane_normal = [0, 0, 1]
@@ -96,11 +101,12 @@ class IterativeProjectionParameters:
 	def computeContactsPosBF(self):
 		self.contactsBF = np.zeros((4, 3))
 		rpy = self.getOrientation()
+		rot = Rot.from_euler('xyz',[rpy[0], rpy[1], rpy[2]], degrees=False)
+		B_R_W = rot.inv().as_dcm()
 		for j in np.arange(0, 4):
 			j = int(j)
-			self.contactsBF[j, :] = np.add(
-				np.dot(self.math.rpyToRot(rpy[0], rpy[1], rpy[2]), (self.contactsWF[j, :] - self.comPositionWF)),
-				self.comPositionBF)
+			self.contactsBF[j,:] = np.add(np.dot(B_R_W, (self.contactsWF[j, :] - self.comPositionWF)),
+				 self.comPositionBF)
 		return self.contactsBF
 
 	def setContactsPosBF(self, contactsBF):
@@ -126,6 +132,9 @@ class IterativeProjectionParameters:
 	def setCoMAngAcc(self, comAngAcc):
 		self.comAngAcc = comAngAcc
 
+	def setCoMLinVel(self, comLinVel):
+		self.comLinVel = comLinVel
+
 	def setCoMAngVel(self, comAngVel):
 		self.comAngVel = comAngVel
 
@@ -140,6 +149,8 @@ class IterativeProjectionParameters:
 
 	def setActiveContacts(self, activeContacts):
 		self.stanceFeet = activeContacts
+		self.numberOfContacts = np.sum(self.stanceFeet)
+		self.useContactTorque = True if self.numberOfContacts < 3 else False
 
 	# print self.stanceFeet
 
@@ -160,7 +171,16 @@ class IterativeProjectionParameters:
 	
 	def setTotalInertia(self, inertia):
 		self.robotInertia = inertia
+	
+	def setEulerAngles(self, eurlerAngles):
+		self.roll = eurlerAngles[0]
+		self.pitch = eurlerAngles[1]
+		self.yaw = eurlerAngles[2]
+		self.eurlerAngles = [self.roll, self.pitch, self.yaw]
 
+	def setInstantaneousCapturePoint(self, ICP):
+		self.instantaneousCapturePoint = ICP
+	
 	def set_plane_normal(self, plane_normal):
 		self.plane_normal = plane_normal
 
@@ -188,6 +208,9 @@ class IterativeProjectionParameters:
 	def getCoMAngAcc(self):
 		return self.comAngAcc
 	
+	def getCoMLinVel(self):
+		return self.comLinVel
+
 	def getCoMAngVel(self):
 		return self.comAngVel
 
@@ -225,7 +248,7 @@ class IterativeProjectionParameters:
 		return self.normals
 
 	def getOrientation(self):
-		return self.roll, self.pitch, self.yaw
+		return [self.roll, self.pitch, self.yaw]
 
 	def getConstraintModes(self):
 		return self.constraintMode
@@ -241,6 +264,9 @@ class IterativeProjectionParameters:
 	
 	def getTotalInertia(self):
 		return self.robotInertia
+	
+	def getInstantaneousCapturePoint(self):
+		return self.instantaneousCapturePoint
 
 	def get_plane_normal(self):
 		return self.plane_normal
@@ -264,6 +290,21 @@ class IterativeProjectionParameters:
 	
 	def getRobotName(self):
 		return self.robot_name
+	
+	''' Compute average height of robot from feet in WF
+		This computes the com_vertical_shift if not provided'''
+	def computeAverageRobotHeight(self):
+		avg_foot_height = 0.0
+		nc = np.sum(self.stanceFeet)
+		stanceID = self.getStanceIndex(self.stanceFeet)
+		for j in range(0, nc):  # only contact positions and normals of the feet that are in stance
+			idx = int(stanceID[j])
+			avg_foot_height += self.contactsWF[idx][2]
+		
+		numberOfStanceFeet = sum(self.stanceFeet)
+		avg_foot_height = avg_foot_height/numberOfStanceFeet
+		avg_height = self.comPositionWF[2] - avg_foot_height
+		return avg_height
 
 	def getStanceIndex(self, stanceLegs):
 		stanceIdx = []
@@ -317,6 +358,7 @@ class IterativeProjectionParameters:
 		self.externalForce = received_data.ext_wrench[0:3]
 		self.externalCentroidalTorque = received_data.ext_wrench[3:6]
 		self.externalCentroidalWrench = np.hstack([self.externalForce, self.externalCentroidalTorque])
+		self.instantaneousCapturePoint = [0.0, 0.0]
 
 		# 		# print 'ext force ',self.externalForceWF
 
@@ -347,13 +389,14 @@ class IterativeProjectionParameters:
 			self.target_CoM_WF[dir] = received_data.target_CoM_WF[dir]
 
 		self.comLinAcc = np.array(received_data.desired_acceleration)
-		# self.comAngAcc = np.array(received_data.desired_acceleration)
-		# self.comAngVel = np.array(received_data.desired_acceleration)
+		# self.comAngAcc = np.array(received_data.desired_ang_acceleration)
+		# self.comLinVel = np.array(received_data.desired_lin_velocity)
+		# self.comAngVel = np.array(received_data.desired_ang_velocity)
 
-		for dir in range(0, 3):
-			self.inertialForces[dir] = received_data.inertial_force[dir]
-		for dir in range(0, 3):
-			self.inertialMoments[dir] = received_data.inertial_moment[dir]
+		# for dir in range(0, 3):
+		# 	self.inertialForces[dir] = received_data.inertial_force[dir]
+		# for dir in range(0, 3):
+		# 	self.inertialMoments[dir] = received_data.inertial_moment[dir]
 
 	def getRobotNameFromMsg(self, received_data):
 		self.robot_name = received_data.robot_name.data
@@ -372,5 +415,5 @@ class IterativeProjectionParameters:
 		self.stanceFeet = received_data.current_stance_legs
 
 		self.numberOfContacts = np.sum(self.stanceFeet)
-		self.pointContacts = True if self.numberOfContacts >= 3 else False
+		self.useContactTorque = True if self.numberOfContacts < 3 else False
 
