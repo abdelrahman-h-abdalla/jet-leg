@@ -1,12 +1,12 @@
-<img src="https://github.com/user-attachments/assets/af6320e4-2162-413f-8975-7411a0fb8bff" alt="double_stance_region_page" width="400"/>
-<img src="https://github.com/user-attachments/assets/0a01939e-1e89-49ec-b680-228766cb2f2d" alt="variable_height_reachable_region_4" width="400"/>
 <img src="https://github.com/user-attachments/assets/cc5fbec9-52c2-4845-ac4f-8864ca7abb03" alt="reachable_region_aliengo_orientation" width="400"/>
 <img src="https://github.com/user-attachments/assets/81ae9bab-cf89-4e5a-bbef-0962873eb0a7" alt="reachable_region_violation2" width="400"/>
 
+<img src="https://github.com/user-attachments/assets/af6320e4-2162-413f-8975-7411a0fb8bff" alt="double_stance_region_page" width="400"/>
+<img src="https://github.com/user-attachments/assets/0a01939e-1e89-49ec-b680-228766cb2f2d" alt="variable_height_reachable_region_4" width="400"/>
+
+
 # Improved Feasible Region
 This python library contains the code used for the computation of the feasibilty criteria in [TRO paper](https://arxiv.org/abs/2011.07967). In here you can also find the code used to generate the figures and plots of the manuscript. 
-
-<img src="https://github.com/orsoromeo/jet-leg/blob/master/figs/3contacts_F%26A.png" alt="hyqgreen" width="200"/>  <img src="https://github.com/orsoromeo/jet-leg/blob/master/figs/3contacts_onlyA.png" alt="planning" width="200"/>  <img src="https://github.com/orsoromeo/jet-leg/blob/master/figs/4contacts_F%26A.png" alt="hyqgreen" width="200"/>  <img src="https://github.com/orsoromeo/jet-leg/blob/master/figs/4contacts_onlyA.png" alt="planning" width="200"/>
 
 ## What you can do with Jet-leg:
 - compute the Support region of legged robots as in [Bretl. et al. 2008](https://ieeexplore.ieee.org/abstract/document/4598894); 
